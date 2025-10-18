@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>File Upload with FilePond - รองรับภาษาไทย</title>
+    
+    <!-- FilePond CSS -->
+    <link href="https://unpkg.com/filepond@^4/dist/filepond.css" rel="stylesheet" />
+    <link href="https://unpkg.com/filepond-plugin-image-preview/dist/filepond-plugin-image-preview.css" rel="stylesheet" />
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            padding: 40px;
+        }
+
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 40px;
+            font-size: 1.1em;
+        }
+
+        .form-group {
+            margin-bottom: 30px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 10px;
+            color: #333;
+            font-weight: 600;
+            font-size: 1.1em;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .filepond--root {
+            margin-bottom: 20px;
+        }
+
+        .upload-status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            display: none;
+        }
+
+        .upload-status.success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+            display: block;
+        }
+
+        .upload-status.error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+            display: block;
+        }
+
+        .file-list {
+            margin-top: 30px;
+        }
+
+        .file-list h2 {
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        .folder {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .folder-name {
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 1.2em;
+        }
+
+        .file-item {
+            padding: 8px;
+            background: white;
+            margin: 5px 0;
+            border-radius: 5px;
+            border-left: 3px solid #667eea;
+        }
+
+        .btn-refresh {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 10px;
+            transition: background 0.3s;
+        }
+
+        .btn-refresh:hover {
+            background: #5568d3;
+        }
+
+        .btn-upload {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 18px;
+            font-weight: 600;
+            width: 100%;
+            margin-top: 20px;
+            transition: background 0.3s;
+        }
+
+        .btn-upload:hover {
+            background: #218838;
+        }
+
+        .btn-upload:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .folder-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .btn-delete-folder {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.3s;
+        }
+
+        .btn-delete-folder:hover {
+            background: #c82333;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📁 File Upload</h1>
+        <p class="subtitle">Upload your files with FilePond</p>
+
+        <form id="uploadForm">
+            <div class="form-group">
+                <label for="folderName">📂 Folder Name:</label>
+                <input 
+                    type="text" 
+                    id="folderName" 
+                    name="folderName" 
+                    placeholder="Enter folder name (e.g., documents, images)" 
+                    value=""
+                    required
+                />
+            </div>
+
+            <div class="form-group">
+                <label>📤 Select Files:</label>
+                <input type="file" id="fileInput" name="files" multiple />
+            </div>
+
+            <button type="submit" class="btn-upload" id="uploadBtn" disabled>
+                📤 Upload Files
+            </button>
+        </form>
+
+        <div id="uploadStatus" class="upload-status"></div>
+
+        <div class="file-list">
+            <h2>📋 Uploaded Files</h2>
+            <button class="btn-refresh" onclick="loadFiles()">🔄 Refresh List</button>
+            <div id="filesList"></div>
+        </div>
+    </div>
+
+    <!-- FilePond JavaScript -->
+    <script src="https://unpkg.com/filepond-plugin-image-preview/dist/filepond-plugin-image-preview.js"></script>
+    <script src="https://unpkg.com/filepond-plugin-file-validate-type/dist/filepond-plugin-file-validate-type.js"></script>
+    <script src="https://unpkg.com/filepond-plugin-file-validate-size/dist/filepond-plugin-file-validate-size.js"></script>
+    <script src="https://unpkg.com/filepond@^4/dist/filepond.js"></script>
+
+    <script>
+        // Register FilePond plugins
+        FilePond.registerPlugin(
+            FilePondPluginImagePreview,
+            FilePondPluginFileValidateSize
+        );
+
+        // Get elements
+        const folderNameInput = document.getElementById('folderName');
+        const fileInput = document.getElementById('fileInput');
+        const uploadBtn = document.getElementById('uploadBtn');
+        const uploadStatus = document.getElementById('uploadStatus');
+        const uploadForm = document.getElementById('uploadForm');
+
+        // Create FilePond instance (without auto-upload)
+        const pond = FilePond.create(fileInput, {
+            allowMultiple: true,
+            maxFiles: 10,
+            maxFileSize: '10MB',
+            acceptedFileTypes: ['image/*', 'application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/plain', 'application/zip'],
+            labelIdle: 'Drag & Drop your files or <span class="filepond--label-action">Browse</span>',
+            instantUpload: false, // Disable automatic upload
+        });
+
+        // Enable/disable upload button based on files
+        pond.on('addfile', (error, file) => {
+            if (!error && pond.getFiles().length > 0) {
+                uploadBtn.disabled = false;
+            }
+        });
+
+        pond.on('removefile', (error, file) => {
+            if (pond.getFiles().length === 0) {
+                uploadBtn.disabled = true;
+            }
+        });
+
+        // Handle form submission
+        uploadForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (folderNameInput.value === '') {
+                showStatus('error', '⚠ Please enter a folder name');
+                return;
+            }
+            const files = pond.getFiles();
+            if (files.length === 0) {
+                showStatus('error', '⚠ Please select at least one file');
+                return;
+            }
+
+            const folderName = folderNameInput.value.trim();
+            if (!folderName) {
+                showStatus('error', '⚠ Please enter a folder name');
+                return;
+            }
+
+            // Disable button during upload
+            uploadBtn.disabled = true;
+            uploadBtn.textContent = '⏳ Uploading...';
+
+            const formData = new FormData();
+            formData.append('folderName', folderName);
+
+            // Add all files to FormData with proper encoding
+            files.forEach(fileItem => {
+                // Ensure Thai and Unicode filenames are properly encoded
+                const file = fileItem.file;
+                const blob = new Blob([file], { type: file.type });
+                formData.append('files', blob, file.name);
+            });
+
+            try {
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    showStatus('success', `✓ ${result.message}\n${result.files.length} file(s) uploaded to folder: ${folderName}`);
+                    
+                    // Clear FilePond
+                    pond.removeFiles();
+                    
+                    // Refresh file list
+                    loadFiles();
+                } else {
+                    showStatus('error', `✗ Upload failed: ${result.error}`);
+                }
+            } catch (error) {
+                showStatus('error', `✗ Network error: ${error.message}`);
+            } finally {
+                uploadBtn.disabled = pond.getFiles().length === 0;
+                uploadBtn.textContent = '📤 Upload Files';
+            }
+        });
+
+        // Show upload status
+        function showStatus(type, message) {
+            uploadStatus.className = `upload-status ${type}`;
+            uploadStatus.textContent = message;
+            setTimeout(() => {
+                uploadStatus.style.display = 'none';
+            }, 5000);
+        }
+
+        // Load uploaded files
+        async function loadFiles() {
+            try {
+                const response = await fetch('/files');
+                const files = await response.json();
+                
+                const filesList = document.getElementById('filesList');
+                filesList.innerHTML = '';
+
+                if (Object.keys(files).length === 0) {
+                    filesList.innerHTML = '<p style="padding: 20px; text-align: center; color: #999;">No files uploaded yet</p>';
+                    return;
+                }
+
+                Object.keys(files).forEach(folder => {
+                    const folderDiv = document.createElement('div');
+                    folderDiv.className = 'folder';
+                    
+                    // Folder header with delete button
+                    const folderHeader = document.createElement('div');
+                    folderHeader.className = 'folder-header';
+                    
+                    const folderName = document.createElement('div');
+                    folderName.className = 'folder-name';
+                    folderName.textContent = `📁 ${folder}`;
+                    folderHeader.appendChild(folderName);
+
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.className = 'btn-delete-folder';
+                    deleteBtn.textContent = '🗑️ Delete Folder';
+                    deleteBtn.onclick = () => deleteFolder(folder);
+                    folderHeader.appendChild(deleteBtn);
+
+                    folderDiv.appendChild(folderHeader);
+
+                    if (files[folder].length === 0) {
+                        folderDiv.innerHTML += '<p style="color: #999; font-style: italic;">Empty folder</p>';
+                    } else {
+                        files[folder].forEach(file => {
+                            const fileItem = document.createElement('div');
+                            fileItem.className = 'file-item';
+                            fileItem.textContent = `📄 ${file}`;
+                            folderDiv.appendChild(fileItem);
+                        });
+                    }
+
+                    filesList.appendChild(folderDiv);
+                });
+            } catch (error) {
+                console.error('Error loading files:', error);
+                showStatus('error', 'Failed to load file list');
+            }
+        }
+
+        // Delete folder function
+        async function deleteFolder(folderName) {
+            if (!confirm(`Are you sure you want to delete the folder "${folderName}" and all its files?`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/folder/${encodeURIComponent(folderName)}`, {
+                    method: 'DELETE'
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    showStatus('success', `✓ ${result.message}`);
+                    loadFiles();
+                } else {
+                    showStatus('error', `✗ Failed to delete folder: ${result.error}`);
+                }
+            } catch (error) {
+                showStatus('error', `✗ Network error: ${error.message}`);
+            }
+        }
+
+        // Load files on page load
+        loadFiles();
+    </script>
+</body>
+</html>
